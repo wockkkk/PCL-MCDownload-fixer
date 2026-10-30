@@ -1,4 +1,5 @@
 # PCL MCDownload fixer 构建脚本（单文件，无需 Visual Studio / NuGet 还原）
+# 通过 csc 响应文件传递参数，避免 PowerShell 对 /win32manifest:、/resource: 等参数的拆分问题
 param(
     [string]$OutDir = (Join-Path (Split-Path $PSScriptRoot -Parent) "PCL-MCDownload-fixer")
 )
@@ -41,21 +42,38 @@ if (-not (Test-Path $refDir)) {
 if (-not (Test-Path $refDir)) { throw "未找到 .NET Framework 4.8 引用程序集" }
 
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
-$sources = Get-ChildItem -Path $src -Recurse -Filter *.cs | ForEach-Object { $_.FullName }
-$refs = @("mscorlib","System","System.Core","System.Web.Extensions","System.Windows.Forms","System.Drawing","System.Xml","System.IO.Compression","PresentationFramework","PresentationCore","WindowsBase") |
-        ForEach-Object { "/r:" + (Join-Path $refDir "$_.dll") }
-$refs += "/r:" + (Join-Path $lib "Mono.Cecil.dll")
-$refs += "/r:" + (Join-Path $lib "0Harmony.dll")
 
 $outExe = Join-Path $OutDir "PCL-MCDownload-fixer.exe"
-$cscArgs = @("exec", $csc, "/nologo", "/target:winexe", "/platform:x86", "/langversion:latest",
-          "/optimize+", "/nostdlib+", "/debug-", "/deterministic+",
-          "/win32manifest:" + (Join-Path $PSScriptRoot "app.manifest"),
-          "/out:$outExe",
-          "/resource:" + (Join-Path $src "assets\rules.json") + ",PCLauncher.rules.json",
-          "/resource:" + (Join-Path $lib "Mono.Cecil.dll") + ",Mono.Cecil.dll",
-          "/resource:" + (Join-Path $lib "0Harmony.dll") + ",0Harmony.dll") + $refs + $sources
+$lines = New-Object System.Collections.Generic.List[string]
+$lines.Add("/nologo")
+$lines.Add("/target:winexe")
+$lines.Add("/platform:x86")
+$lines.Add("/langversion:latest")
+$lines.Add("/optimize+")
+$lines.Add("/nostdlib+")
+$lines.Add("/debug-")
+$lines.Add("/deterministic+")
+$lines.Add('/win32manifest:"' + (Join-Path $PSScriptRoot "app.manifest") + '"')
+$lines.Add('/out:"' + $outExe + '"')
+$lines.Add('/resource:"' + (Join-Path $src "assets\rules.json") + '",PCLauncher.rules.json')
+$lines.Add('/resource:"' + (Join-Path $lib "Mono.Cecil.dll") + '",Mono.Cecil.dll')
+$lines.Add('/resource:"' + (Join-Path $lib "0Harmony.dll") + '",0Harmony.dll')
 
-& $dotnet @cscArgs
-if ($LASTEXITCODE -ne 0) { throw "编译失败（exit $LASTEXITCODE）" }
+foreach ($asm in @("mscorlib","System","System.Core","System.Web.Extensions","System.Windows.Forms","System.Drawing","System.Xml","System.IO.Compression","PresentationFramework","PresentationCore","WindowsBase")) {
+    $lines.Add('/r:"' + (Join-Path $refDir "$asm.dll") + '"')
+}
+$lines.Add('/r:"' + (Join-Path $lib "Mono.Cecil.dll") + '"')
+$lines.Add('/r:"' + (Join-Path $lib "0Harmony.dll") + '"')
+Get-ChildItem -Path $src -Recurse -Filter *.cs | ForEach-Object {
+    $lines.Add('"' + $_.FullName + '"')
+}
+
+$rsp = Join-Path $env:TEMP "PCL-MCDownload-fixer-csc.rsp"
+Set-Content -Path $rsp -Value $lines -Encoding UTF8
+Write-Host ("csc 响应文件：" + $rsp + "（" + $lines.Count + " 行）")
+
+& $dotnet exec $csc "@$rsp"
+$code = $LASTEXITCODE
+Remove-Item $rsp -Force -ErrorAction SilentlyContinue
+if ($code -ne 0) { throw "编译失败（exit $code）" }
 Write-Host "PCL MCDownload fixer 构建完成（单文件）：$outExe" -ForegroundColor Green
