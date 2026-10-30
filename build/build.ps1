@@ -16,8 +16,10 @@ function Find-Dotnet {
 }
 $dotnet = Find-Dotnet
 $sdkRoot = Join-Path $env:ProgramFiles "dotnet\sdk"
-$sdk = Get-ChildItem $sdkRoot -Directory | Sort-Object Name -Descending |
-       Where-Object { Test-Path (Join-Path $_.FullName "Roslyn\bincore\csc.dll") } | Select-Object -First 1
+$sdk = Get-ChildItem $sdkRoot -Directory |
+       Where-Object { Test-Path (Join-Path $_.FullName "Roslyn\bincore\csc.dll") } |
+       Sort-Object { try { [version]$_.Name } catch { [version]"0.0" } } -Descending |
+       Select-Object -First 1
 if (-not $sdk) { throw "未找到带 Roslyn 的 .NET SDK" }
 $csc = Join-Path $sdk.FullName "Roslyn\bincore\csc.dll"
 
@@ -25,6 +27,16 @@ $pf86 = [Environment]::GetEnvironmentVariable("ProgramFiles(x86)")
 $refDir = Join-Path $pf86 "Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8"
 if (-not (Test-Path $refDir)) {
     $refDir = Join-Path $env:USERPROFILE ".nuget\packages\microsoft.netframework.referenceassemblies.net48\1.0.3\build\.NETFramework\v4.8"
+}
+if (-not (Test-Path $refDir)) {
+    # CI / 干净机器兜底：从 NuGet 拉参考程序集包并解压
+    $pkg = Join-Path $env:TEMP "microsoft.netframework.referenceassemblies.net48.1.0.3.nupkg"
+    $zip = Join-Path $env:TEMP "net48refs"
+    Write-Host "未找到 4.8 引用程序集，尝试从 NuGet 下载…"
+    Invoke-WebRequest -Uri "https://api.nuget.org/v3-flatcontainer/microsoft.netframework.referenceassemblies.net48/1.0.3/microsoft.netframework.referenceassemblies.net48.1.0.3.nupkg" -OutFile $pkg
+    if (Test-Path $zip) { Remove-Item $zip -Recurse -Force }
+    Expand-Archive -Path $pkg -DestinationPath $zip
+    $refDir = Join-Path $zip "build\.NETFramework\v4.8"
 }
 if (-not (Test-Path $refDir)) { throw "未找到 .NET Framework 4.8 引用程序集" }
 
@@ -36,7 +48,7 @@ $refs += "/r:" + (Join-Path $lib "Mono.Cecil.dll")
 $refs += "/r:" + (Join-Path $lib "0Harmony.dll")
 
 $outExe = Join-Path $OutDir "PCL-MCDownload-fixer.exe"
-$args = @("exec", $csc, "/nologo", "/target:winexe", "/platform:x86", "/langversion:latest",
+$cscArgs = @("exec", $csc, "/nologo", "/target:winexe", "/platform:x86", "/langversion:latest",
           "/optimize+", "/nostdlib+", "/debug-", "/deterministic+",
           "/win32manifest:" + (Join-Path $PSScriptRoot "app.manifest"),
           "/out:$outExe",
@@ -44,6 +56,6 @@ $args = @("exec", $csc, "/nologo", "/target:winexe", "/platform:x86", "/langvers
           "/resource:" + (Join-Path $lib "Mono.Cecil.dll") + ",Mono.Cecil.dll",
           "/resource:" + (Join-Path $lib "0Harmony.dll") + ",0Harmony.dll") + $refs + $sources
 
-& $dotnet @args
+& $dotnet @cscArgs
 if ($LASTEXITCODE -ne 0) { throw "编译失败（exit $LASTEXITCODE）" }
 Write-Host "PCL MCDownload fixer 构建完成（单文件）：$outExe" -ForegroundColor Green

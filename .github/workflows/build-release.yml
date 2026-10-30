@@ -1,0 +1,59 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 构建单文件 exe
+        shell: pwsh
+        run: ./build/build.ps1
+
+      - name: 校验产物
+        shell: pwsh
+        run: |
+          $exe = "PCL-MCDownload-fixer/PCL-MCDownload-fixer.exe"
+          if (-not (Test-Path $exe)) { throw "构建产物不存在：$exe" }
+          $size = (Get-Item $exe).Length
+          Write-Host ("产物大小：{0:N0} 字节" -f $size)
+          if ($size -lt 1MB) { throw "产物过小，构建可能不完整" }
+          # 内嵌依赖检查（Harmony / Cecil / rules.json）
+          $text = [Text.Encoding]::GetEncoding(28591).GetString([IO.File]::ReadAllBytes($exe))
+          foreach ($k in @("0Harmony.dll","Mono.Cecil.dll","PCLauncher.rules.json")) {
+            if ($text -notlike "*$k*") { throw "缺少内嵌资源：$k" }
+          }
+          if ($text -notmatch "requireAdministrator") { throw "缺少 requireAdministrator 清单" }
+          Write-Host "内嵌资源与清单检查通过"
+          & $exe --selftest
+          if ($LASTEXITCODE -ne 0) { throw "selftest 失败（exit $LASTEXITCODE）" }
+          Write-Host "selftest 通过"
+          Get-FileHash $exe -Algorithm SHA256 | Format-List
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: PCL-MCDownload-fixer
+          path: PCL-MCDownload-fixer/PCL-MCDownload-fixer.exe
+
+      - name: 发布 Release（仅 tag）
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $exe = "PCL-MCDownload-fixer/PCL-MCDownload-fixer.exe"
+          $sha = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLower()
+          gh release create $tag "$exe#PCL-MCDownload-fixer.exe" --title $tag --generate-notes --notes "SHA256: $sha"

@@ -179,3 +179,12 @@ PCL-MCDownload-fixer.exe --selftest
 - 依赖：Lib.Harmony（MIT）、Mono.Cecil（MIT），与本项目一起分发。
 - 官方 `Plain Craft Launcher 2.exe` 不属于本项目，未修改、不随附源码，其版权归 PCL 作者所有。
 - 本项目仅做进程内互操作，请遵守 PCL 自身的许可与当地法律法规；**不要公开分发**编译产物给第三方。
+
+## 12. 持续集成 / 发布
+
+`.github/workflows/build-release.yml`：
+
+- **push / PR / 手动触发**：Windows runner 上跑 `build/build.ps1` 构建单文件 exe，校验大小、内嵌资源（0Harmony / Mono.Cecil / rules）、`requireAdministrator` 清单，并执行 `--selftest`；
+- **打 tag（`v*`）**：自动创建 GitHub Release，附上 `PCL-MCDownload-fixer.exe`（Release 说明里带 SHA256）。
+
+发布流程：`git tag v1.0.0 && git push origin v1.0.0`。
