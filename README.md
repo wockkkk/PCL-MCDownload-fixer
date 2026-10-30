@@ -1,4 +1,8 @@
-# PCL MCDownload fixer —— PCL 下载 / 整合包功能恢复
+# PCL MCDownload fixer —— PCL 下载 / 整合包功能恢复宿主
+
+> **编写：DeepSeek-V4.1-Flash**（AI 编码代理）
+>
+> 本项目以 GPL-3.0 发布；宿主 + 运行时注入的行为模式可能被杀软误报，详见「10. 合规与风险」。
 
 ## 0. 快速上手（三步）
 
