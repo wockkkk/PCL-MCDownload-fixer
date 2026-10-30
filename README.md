@@ -147,7 +147,7 @@ PCL-MCDownload-fixer.exe --selftest
 
 ## 9. 已知限制
 
-- 本仓库的 `pcls/` 只有官方 exe，没有 PCL 的完整运行环境；在自动化/沙箱环境里 PCL 自身会因“无权写临时目录 / 注册表”弹出“运行环境错误”或直接退出（**直接双击官方 exe 也一样**），因此“完整下载一个 MC 客户端 / 安装一个整合包”这类 GUI 端到端验证需要在正常桌面会话里手动完成。
+- 本仓库不包含官方 PCL 程序（版权原因），需要你自备 `Plain Craft Launcher 2.exe`；在自动化/沙箱环境里 PCL 自身可能因“无权写临时目录 / 注册表”弹“运行环境错误”，因此“完整下载 MC 客户端 / 安装整合包”这类 GUI 端到端验证请在正常桌面会话里完成。
   实测佐证：本次开发环境的目录被加了 `Everyone:(DENY)(S,DC)` + `Low Mandatory Level:(NW)` 的完整性标签（`icacls` 可见），PCL 的 `CheckPermissionWithException` 写入+删除探测文件时被拦；用直连、WMI、计划任务三种方式启动 PCLauncher 结果一致，说明与本工具无关。
 - 建议的验收步骤：
   1. 备份 PCL 目录 → 双击 PCL-MCDownload-fixer.exe，确认主界面、主题、正版登录、启动游戏与官方一致；
