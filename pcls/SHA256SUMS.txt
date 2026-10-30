@@ -1,6 +1,0 @@
-# 官方 PCL exe 备份与哈希清单
-# 备份时间：2026-10-29T13:59:01.050Z
-# 格式：SHA256  MD5  文件
-6b6e1260cb5a1d6a303855f1c60cab3d0bc1aebba7e40a964180188b271e7386  d6a946a007f8e84a8bfb0e239868f91a  D:\my\pcl_merge_proj\backup\Plain Craft Launcher 2 (2.99.0).exe
-0db34e19d9eeb6d496d20fabe786ec16bbd36ba6b0ccdc8d29cb7e909c114397  e9a9b52a232da05d9e8ac950c456abd2  D:\my\pcl_merge_proj\backup\Plain Craft Launcher 2 (2.99.1).exe
-30eb93c62fc51ede0898648e67455478a3d5a4f279938ae65aec77b84cb9703f  51b1ac71057aabfedda225884eda1c23  D:\my\pcl_merge_proj\backup\Plain Craft Launcher 2 (lower).exe

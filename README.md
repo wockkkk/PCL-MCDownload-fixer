@@ -30,29 +30,20 @@
 
 因为官方 exe 完全没被改写，官方升级后只要拦截形态没变，本工具无需改版。
 
-## 2. 目录结构（极简，全英文目录名）
+## 2. 目录结构
 
 ```
-pcl_merge_proj/
+PCL-MCDownload-fixer/
 ├─ README.md                     本说明
-├─ PCL-恢复下载与整合包功能-任务书.md
-├─ PCL-MCDownload-fixer/         ★ 成品（单文件）
-│   ├─ PCL-MCDownload-fixer.exe  启动器，2.5 MB，依赖全部内嵌
-│   ├─ runtime/                  运行时产物（首次运行自动创建）
-│   │   ├─ logs/                 启动日志
-│   │   ├─ reports/              扫描报告
-│   │   └─ temp/                 备用临时目录
-│   └─ README.md
+├─ LICENSE                       GPL-3.0
+├─ .github/workflows/            自动构建 + tag 发布 Release
 ├─ src/PCLauncher/               C# 源码（Core / Scan / Patch / Update / Host / assets）
 ├─ build/                        构建脚本、app.manifest、selftest.ps1
-├─ lib/                          编译期引用：Mono.Cecil / 0Harmony（会被嵌入 exe）
-├─ pcls/                         三个官方原版 exe（未改动）+ SHA256SUMS.txt
-└─ docs/                         扫描报告（2.99.0.0 / 2.13.1.1）+ 版本兼容性对比
+└─ lib/                          编译期引用：Mono.Cecil / 0Harmony（构建时嵌入 exe）
 ```
 
-> 单文件版不需要旁边放任何 DLL / config / rules.json；
-> `0Harmony`、`Mono.Cecil`、默认规则、运行时配置全部内嵌，运行时自动解出。
-> 想覆盖规则时，可在 exe 同目录放一个 `rules.json`。
+构建产物 `PCL-MCDownload-fixer/`（单文件 exe）不纳入版本库，由 CI 产出：
+push 到 main 可在 Actions 里下载 artifact，打 `v*` tag 会自动发 Release。
 
 ## 3. 构建
 
@@ -147,12 +138,12 @@ PCL-MCDownload-fixer.exe --selftest
 
 ## 8. 验证结果（本机实测）
 
-- 扫描层：2.99.0.0 / 2.99.0.1 / 2.13.1.1 三个 exe 全部解析成功，报告见 `docs/`。
+- 扫描层：对 PCL 2.99.0.0 / 2.99.0.1 / 2.13.1.1 做过解析验证（运行时用 `--scan` 随时复查）。
 - 2.99.0.0 与 2.99.0.1 都是 **4 个拦截点**，形态完全一致；但**文案不同**（2.99.0.0 是“PCL 暂时不再提供…”，2.99.0.1 是“PCL 不再提供…”），所以规则按前缀“为遵守相关法律法规”匹配，避免跨版本失效。
 - 2.13.1.1（限制上线前）**0 个拦截点**，可作对照基线。
 - 宿主：PCL 程序集加载成功；**15 项补丁全部成功**（0 失败、1 个陷阱点跳过）；8/8 个目标方法 JIT 校验通过；内嵌依赖（MeloongCore / PCLCS / Newtonsoft.Json 等 10 个）预载成功。
 - 自检：整合包类型识别 8/8 通过。
-- 官方 exe 哈希：三个文件在全部实验前后均未变化（见 `pcls/SHA256SUMS.txt`）。
+- 官方 exe：在全部实验前后哈希一致（运行时会自动比对并写日志，可自证零改动）。
 
 ## 9. 已知限制
 
@@ -164,7 +155,7 @@ PCL-MCDownload-fixer.exe --selftest
   3. 拖入一个 Modrinth / CurseForge 整合包，或点“手动安装整合包”，确认能安装；
   4. 重启 PCL-MCDownload-fixer，确认补丁仍然生效；手动点“检查更新”应无反应；
   5. 对比官方 exe 的 SHA256（日志里就有）。
-- 若日志里出现“未识别形态”“未匹配到伪 LoaderTask 构造”，说明该版本拦截形态变了：把 `docs/PCL-scan-*.txt` 反馈后按需更新 `rules.json` 即可，不需要改代码。
+- 若日志里出现“未识别形态”“未匹配到伪 LoaderTask 构造”，说明该版本拦截形态变了：把 `runtime\reports\PCL-scan-*.txt` 反馈后按需更新 `rules.json` 即可，不需要改代码。
 
 ## 10. 合规与风险
 

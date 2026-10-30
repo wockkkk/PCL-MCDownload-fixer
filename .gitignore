@@ -1,5 +1,6 @@
 # 官方 PCL 二进制（含第三方版权，不随仓库分发）
-pcls/*/Plain Craft Launcher 2.exe
+pcls/
+PCL-MCDownload-fixer/
 
 # 运行时产物
 runtime/

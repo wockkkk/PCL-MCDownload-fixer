@@ -1,17 +1,16 @@
 # PCL 跨版本拦截点自测脚本
 # 用法：
 #   .\build\selftest.ps1 -PclExe "D:\PCL\Plain Craft Launcher 2.exe"
-#   .\tools\selftest.ps1                 # 自动扫描 pcls\ 下的全部版本
+#   .\build\selftest.ps1 -PclExe "路径1","路径2"   # 批量对比多个版本（无默认扫描目录）
 param(
     [string[]]$PclExe = @(),
     [string]$Launcher = (Join-Path (Split-Path $PSScriptRoot -Parent) "PCL-MCDownload-fixer\PCL-MCDownload-fixer.exe"),
-    [string]$OutDir = (Join-Path (Split-Path $PSScriptRoot -Parent) "docs")
+    [string]$OutDir = (Join-Path (Split-Path $PSScriptRoot -Parent) "runtime\reports")
 )
 $ErrorActionPreference = "Stop"
 if (-not (Test-Path $Launcher)) { throw "未找到 $Launcher，请先运行 build\build.ps1" }
 if ($PclExe.Count -eq 0) {
-    $PclExe = Get-ChildItem (Join-Path (Split-Path $PSScriptRoot -Parent) "pcls") -Recurse -Filter "Plain Craft Launcher 2.exe" |
-              ForEach-Object { $_.FullName }
+    throw "请用 -PclExe 指定至少一个 Plain Craft Launcher 2.exe 路径"
 }
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 
