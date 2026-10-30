@@ -1,0 +1,21 @@
+# 官方 PCL 二进制（含第三方版权，不随仓库分发）
+pcls/*/Plain Craft Launcher 2.exe
+
+# 运行时产物
+runtime/
+logs/
+temp/
+*.log
+
+# 构建中间产物
+bin/
+obj/
+.vs/
+.idea/
+
+# gh 本地状态
+.local/
+
+# 本地配置
+*.user
+*.suo

@@ -1,0 +1,46 @@
+================ PCL 拦截点扫描报告 ================
+扫描时间    : 2026-10-29 22:07:58
+文件        : D:\my\pcl_merge_proj\pcls\2.99.0\Plain Craft Launcher 2.exe
+大小        : 5980160 字节
+SHA256      : 6b6e1260cb5a1d6a303855f1c60cab3d0bc1aebba7e40a964180188b271e7386
+程序集      : Plain Craft Launcher 2 2.99.0.0
+运行时      : Net_4_0 / I386
+入口点      : System.Void PCL.Application::Main()
+类型/方法/字段: 665 / 6339 / 3603
+规则来源    : D:\my\pcl_merge_proj\release\PCLauncher\rules.json
+
+---- 拦截点（特征字符串） 4 处 ----
+  [hint] PCL.ModModpack::ModpackInstall
+      token=0x060001EF  sig=Void ModpackInstall()  IL=19 字节
+      指令窗口: ldstr "为遵守相关法律法规，PCL 暂时不再提供 MC 下载功能，非常抱歉 qwq……" ; ldc.i4.2 ; ldc.i4.1 ; call ModMain::Hint ; ret
+      处置: prefix-skip（取消下架提示）
+  [inline-throw] PCL.ModModpack::ModpackInstall
+      token=0x060001F0  sig=LoaderCombo`1 ModpackInstall(String File, String InstanceName, String Logo)  IL=751 字节
+      指令窗口: ldstr "为遵守相关法律法规，PCL 暂时不再提供 MC 下载功能，非常抱歉 qwq……" ; newobj Exception::.ctor ; throw ; ldloc.1 ; brfalse.s IL_02ee: endfinally ; ldloc.1 ; callvirt ZipArchive::Dispose
+      处置: transpiler（throw 段改为 rethrow）
+  [stub-throw] PCL.PageDownloadInstall/_Closure$__::_Lambda$__3-0
+      token=0x06001468  sig=Void _Lambda$__3-0()  IL=11 字节
+      指令窗口: ldstr "为遵守相关法律法规，PCL 暂时不再提供 MC 下载功能，非常抱歉 qwq……" ; newobj Exception::.ctor ; throw
+      处置: prefix-skip（作废桩方法）
+  [runtime-compare(trap)] PCL.FormMain/_Closure$__25-0::_Lambda$__0
+      token=0x060017FF  sig=Void _Lambda$__0()  IL=868 字节
+      指令窗口: ldstr "为遵守相关法律法规，PCL 暂时不再提供 MC 下载功能，非常抱歉 qwq……" ; ldc.i4.0 ; call Operators::CompareString ; brtrue.s IL_02ba: ldloc.s V_5 ; ldloc.s V_5 ; callvirt Exception::get_Message ; ldc.i4.2
+      处置: none（真实运行时比较，严禁修改）
+
+---- 下载页加载器 ----
+  PCL.PageDownloadInstall::LoaderInit token=0x06000513
+  伪加载器标题: 关闭下载
+  伪加载器构造: PCL.ModLoader/LoaderTask`2<System.String,PCL.ModDownload/DlClientListResult>::.ctor(String,Action`1,Func`1,ThreadPriority)
+  目标加载器字段: PCL.ModDownload::DlClientListLoader
+  模式匹配: 成功
+  newobj: System.Action`1<PCL.ModLoader/LoaderTask`2<System.String,PCL.ModDownload/DlClientListResult>>::.ctor(System.Object, System.IntPtr)
+  newobj: PCL.ModLoader/LoaderTask`2<System.String,PCL.ModDownload/DlClientListResult>::.ctor(System.String, System.Action`1<PCL.ModLoader/LoaderTask`2<TIn,TOut>>, System.Func`1<TIn>, System.Threading.ThreadPriority)
+  newobj: System.Action`1<PCL.ModLoader/LoaderTask`2<System.String,PCL.ModDownload/DlClientListResult>>::.ctor(System.Object, System.IntPtr)
+  call: PCL.MyPageRight::PageLoaderInit(PCL.MyLoading, System.Windows.FrameworkElement, System.Windows.FrameworkElement, System.Windows.FrameworkElement, PCL.ModLoader/LoaderTask`2<TIn,TOut>, System.Action`1<PCL.ModLoader/LoaderTask`2<TIn,TOut>>, System.Func`1<TIn>, System.Boolean)
+
+---- 更新禁用目标 4 个 ----
+  PCL.ModSecret::UpdateCheckByButton  token=0x0600041E  sig=Void UpdateCheckByButton()
+  PCL.ModSecret::UpdateStart  token=0x0600041F  sig=Void UpdateStart(Boolean Silent, IEnumerable`1 UrlsOverride)
+  PCL.ModSecret::UpdateRestart  token=0x06000420  sig=Void UpdateRestart(Boolean TriggerRestartAndByEnd)
+  PCL.ModSecret::UpdateReplace  token=0x06000421  sig=Void UpdateReplace(Int32 ProcessId, String OldFileName, String NewFileName, Boolean TriggerRestart)
+

@@ -1,0 +1,25 @@
+================ PCL 拦截点扫描报告 ================
+扫描时间    : 2026-10-29 22:04:20
+文件        : D:\my\pcl_merge_proj\pcls\lower\Plain Craft Launcher 2.exe
+大小        : 5750272 字节
+SHA256      : 30eb93c62fc51ede0898648e67455478a3d5a4f279938ae65aec77b84cb9703f
+程序集      : Plain Craft Launcher 2 2.13.1.1
+运行时      : Net_4_0 / I386
+入口点      : System.Void PCL.Application::Main()
+类型/方法/字段: 643 / 6116 / 3501
+规则来源    : 内嵌资源 PCLauncher.rules.json
+
+---- 拦截点（特征字符串） 0 处 ----
+  （无）
+
+---- 下载页加载器 ----
+  （无）
+
+---- 更新禁用目标 4 个 ----
+  PCL.ModSecret::UpdateCheckByButton  token=0x0600041D  sig=Void UpdateCheckByButton()
+  PCL.ModSecret::UpdateStart  token=0x0600041E  sig=Void UpdateStart(Boolean Silent, IEnumerable`1 UrlsOverride)
+  PCL.ModSecret::UpdateRestart  token=0x0600041F  sig=Void UpdateRestart(Boolean TriggerRestartAndByEnd)
+  PCL.ModSecret::UpdateReplace  token=0x06000420  sig=Void UpdateReplace(Int32 ProcessId, String OldFileName, String NewFileName, Boolean TriggerRestart)
+
+---- 警告 ----
+  ! 未发现任何特征字符串引用：可能是限制上线前的旧版本（如 2.13.x，属正常），也可能是拦截形态已改变，请结合版本号判断。

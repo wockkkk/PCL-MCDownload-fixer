@@ -1,0 +1,34 @@
+{
+  "markerPrefixes": ["为遵守相关法律法规"],
+  "hintMethodNames": ["Hint"],
+  "compareMethodNames": ["CompareString"],
+  "exceptionType": "System.Exception",
+  "restoreLoader": true,
+  "permissionCompat": true,
+  "disableSplash": true,
+  "environmentCompat": true,
+  "restoreInstallEntry": true,
+  "registryCompat": false,
+  "restoreModpackRowClick": true,
+  "restoreSaveButton": true,
+  "longPathCompat": true,
+  "loader": {
+    "pageType": "PCL.PageDownloadInstall",
+    "methodName": "LoaderInit",
+    "hintTitle": "关闭下载",
+    "replaceTitle": "Minecraft 版本",
+    "loaderFieldType": "PCL.ModDownload",
+    "loaderFieldName": "DlClientListLoader",
+    "mode": "replace"
+  },
+  "updateBlock": {
+    "type": "PCL.ModSecret",
+    "methodPrefixes": ["UpdateCheckByButton", "UpdateStart", "UpdateRestart", "UpdateReplace", "DownloadLatestPCL", "HasUpdatePermission"],
+    "enabled": true
+  },
+  "modpackDialog": {
+    "type": "PCL.ModModpack",
+    "methodName": "ModpackInstall",
+    "enabled": true
+  }
+}
