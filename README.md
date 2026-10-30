@@ -173,6 +173,7 @@ PCL-MCDownload-fixer.exe --selftest
 本项目以 **GNU General Public License v3.0** 发布，全文见 [LICENSE](LICENSE)。
 
 - 依赖：Lib.Harmony（MIT）、Mono.Cecil（MIT），与本项目一起分发。
+- 上游项目（PCL 本体）：<https://github.com/meloong-Git/PCL>
 - 官方 `Plain Craft Launcher 2.exe` 不属于本项目，未修改、不随附源码，其版权归 PCL 作者所有。
 - 再分发本项目的源码或编译产物时，请保留 `LICENSE` 与版权声明；官方 PCL 不在本项目授权范围内。
 
