@@ -47,7 +47,7 @@ $outExe = Join-Path $OutDir "PCL-MCDownload-fixer.exe"
 $lines = New-Object System.Collections.Generic.List[string]
 $lines.Add("/nologo")
 $lines.Add("/target:winexe")
-$lines.Add("/platform:x86")
+$lines.Add("/platform:anycpu")
 $lines.Add("/langversion:latest")
 $lines.Add("/optimize+")
 $lines.Add("/nostdlib+")

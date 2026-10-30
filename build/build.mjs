@@ -47,7 +47,7 @@ const refs = ["mscorlib","System","System.Core","System.Web.Extensions","System.
 refs.push("/r:" + path.join(lib, "Mono.Cecil.dll"), "/r:" + path.join(lib, "0Harmony.dll"));
 
 fs.mkdirSync(out, { recursive: true });
-const args = ["exec", findCsc(), "/nologo", "/target:winexe", "/platform:x86", "/langversion:latest",
+const args = ["exec", findCsc(), "/nologo", "/target:winexe", "/platform:anycpu", "/langversion:latest",
   "/optimize+", "/nostdlib+", "/debug-", "/deterministic+",
   "/win32manifest:" + path.join(root, "build", "app.manifest"),
   "/out:" + path.join(out, "PCL-MCDownload-fixer.exe"),

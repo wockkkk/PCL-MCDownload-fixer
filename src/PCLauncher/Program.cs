@@ -77,6 +77,7 @@ namespace PCLauncher
                 string pclDir = Path.GetDirectoryName(Path.GetFullPath(pclExe));
                 string runtimeDir = Path.Combine(opt.LauncherDir, "runtime");
                 Log.Info("[paths] Fixer 目录=" + opt.LauncherDir + "，运行时目录=" + runtimeDir);
+                LogBitness(pclExe);
                 string beforeHash = Crypto.Sha256File(pclExe);
                 Log.Info("目标 PCL：" + pclExe);
                 Log.Info("目标 SHA256（启动前）：" + beforeHash);
@@ -117,6 +118,26 @@ namespace PCLauncher
             {
                 Log.Stop();
             }
+        }
+
+        /// <summary>
+        /// 记录位宽并检查是否与 PCL 的默认运行方式一致。
+        /// 官方 PCL 是 AnyCPU（PE32 + ILONLY + 无 32BITREQUIRED），在 x64 系统上以 64 位运行，
+        /// 它内嵌的 libwebp64 等原生库也是 64 位；宿主若是 32 位，PCL 就会被拖进 32 位进程，
+        /// 这些原生库加载不了（典型现象：版本图标加载失败、DllNotFoundException libwebp）。
+        /// </summary>
+        private static void LogBitness(string pclExe)
+        {
+            int bits = IntPtr.Size * 8;
+            PeInfo pe = PeReader.TryRead(pclExe);
+            Log.Info("[host] 进程位宽=" + bits + " 位；PCL=" + (pe == null ? "<无法解析 PE 头>" : pe.ToString()));
+            if (pe == null) return;
+            if (pe.Requires32Bit && bits == 64)
+                Log.Warn("[host] PCL 是 32 位专用程序（32BITREQUIRED），64 位宿主无法加载它，请改用 x86 版 Fixer。");
+            else if (pe.IsAnyCpu && bits == 32)
+                Log.Warn("[host] 当前宿主是 32 位，而 PCL 在 64 位系统上默认以 64 位运行：" +
+                         "其内嵌的 64 位原生库（libwebp64 等）将无法加载，可能出现“版本图标加载失败”。" +
+                         "请使用 AnyCPU 构建的 Fixer。");
         }
 
         /// <summary>强制启用现代 TLS：宿主进程没有声明目标框架时，.NET 只开 Ssl3/TLS1.0，访问 Mojang/BMCLAPI 必然握手失败。</summary>

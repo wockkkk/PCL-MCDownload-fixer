@@ -17,6 +17,16 @@ namespace PCLauncher.Host
         private static readonly Dictionary<string, Assembly> Cache =
             new Dictionary<string, Assembly>(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>
+        /// 这些内嵌程序集不能由宿主预载，必须留给 PCL 自己的 AssemblyResolve 回调去加载。
+        /// 目前只有 Imazen.WebP：PCL 在加载它之后会紧接着调用 ExtractLibwebp()，
+        /// 把内嵌的 libwebp64 释放成 &lt;PCL 工作目录&gt;\libwebp.dll 并 SetDllDirectory。
+        /// 宿主若抢先预载，CLR 按名称直接命中已加载程序集，PCL 的回调不会触发，
+        /// 原生 libwebp 永远不会就位——表现就是“加载版本图标失败：DllNotFoundException libwebp”。
+        /// </summary>
+        private static readonly HashSet<string> DeferredToPcl =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Imazen.WebP" };
+
         public static void Preload(Assembly pcl)
         {
             AppDomain.CurrentDomain.AssemblyResolve += Resolve;
@@ -42,6 +52,18 @@ namespace PCLauncher.Host
                             if (bytes[0] != (byte)'M' || bytes[1] != (byte)'Z')
                             {
                                 Log.Info("[deps] 跳过资源 " + resName + " :: " + key + " (" + bytes.Length + " 字节，非 PE)");
+                                continue;
+                            }
+                            if (key != null && DeferredToPcl.Contains(key))
+                            {
+                                Log.Info("[deps] 延迟交由 PCL 自行加载 " + key + "（它需要先释放原生依赖 libwebp）");
+                                continue;
+                            }
+                            var pe = PeReader.TryParse(bytes, bytes.Length);
+                            if (pe != null && !pe.IsManaged)
+                            {
+                                // 原生 DLL（如 libwebp64）：PCL 自己会在启动时释放并 LoadLibrary，这里不能也不能 Assembly.Load
+                                Log.Info("[deps] 跳过内嵌原生库 " + key + "（" + pe + "，" + bytes.Length + " 字节）");
                                 continue;
                             }
                             try

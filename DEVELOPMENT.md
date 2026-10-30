@@ -75,8 +75,11 @@ build\build-node.cmd   # 备用：需要 Node.js，逻辑与 build.ps1 相同
 | 红条“写入注册表失败 / 程序权限不足”，拖拽钩子 `拒绝访问` | 官方 PCL 的清单是 `requireAdministrator`（每次启动弹 UAC），而我们的启动器是 `asInvoker`，普通权限下写不了 `HKCU\Software\PCL`、也设不了窗口消息过滤器 | `build/app.manifest` 同样声明 `requireAdministrator`，与官方一致 | 编译清单 |
 | 下载页左侧看不到“原版游戏” | 发布版 XAML 里 `ItemInstall` 和“社区资源”标题被设为 `Collapsed`（UIA 实测：offscreen=True、矩形 Infinity，且 ScrollViewer 不可滚动，排除“滚出视口”） | `PageDownloadLeft` 构造后强制设为 `Visible` | `restoreInstallEntry` |
 | 启动即崩：`FileNotFoundException: Mono.Cecil` | 发行包里的 Mono.Cecil 版本与编译时不一致（0.11.5 在部分机器上解析失败） | 升级到 Mono.Cecil 0.11.6，并在启动时做依赖自检 + 目录兜底加载 | 依赖清单 |
+| 版本图标全部加载失败：`加载版本图标失败 … DllNotFoundException: libwebp` | 两个原因叠加：① Fixer 以 `/platform:x86` 构建，把 AnyCPU 的 PCL 拖进 32 位进程，而 PCL 内嵌的 `libwebp64` 是 64 位原生 DLL；② PCL 只在**自己的** AssemblyResolve 回调里才释放该原生库（`ExtractLibwebp()` → 写 `<PCL 工作目录>\libwebp.dll` + `SetDllDirectory`），宿主若抢先把 `Imazen.WebP` 预载进域，这个回调就永远不会触发 | ① 构建改为 `/platform:anycpu`，让 PCL 和官方一样在 x64 系统上以 64 位运行（32 位系统自动回退）；② `DependencyResolver` 增加延迟加载名单，`Imazen.WebP` 交给 PCL 自己加载；③ 启动时把宿主位宽与 PCL 的 CLR 头（`ILONLY` / `32BITREQUIRED`）写进日志，位宽不符时给出警告 | 构建平台 + 延迟加载名单 |
 
 > 以上兼容层默认全部开启，但都可以用 `rules.json` 单独关掉；它们不改变 PCL 的业务逻辑，只修宿主环境差异。
+>
+> 位宽是硬约束：官方 PCL 是 AnyCPU（PE32 + ILONLY + 无 32BITREQUIRED），在 x64 系统上按 64 位跑，它内嵌的原生库（`libwebp64`、`libjlw-x86_64` 等）也只有 64 位版本。所以 Fixer 必须是 AnyCPU；如果在 32 位系统上运行，PCL 的这些图片解码功能本身就会失效（与官方行为一致）。
 
 ## 实测验证结果
 
@@ -86,6 +89,7 @@ build\build-node.cmd   # 备用：需要 Node.js，逻辑与 build.ps1 相同
 - 宿主：PCL 程序集加载成功；**15 项补丁全部成功**（0 失败、1 个陷阱点跳过）；8/8 个目标方法 JIT 校验通过；内嵌依赖（MeloongCore / PCLCS / Newtonsoft.Json 等 10 个）预载成功。
 - 自检：整合包类型识别 8/8 通过。
 - 官方 exe：在全部实验前后哈希一致（运行时会自动比对并写日志，可自证零改动）。
+- PCL 2.13.1.1（限制上线前版本，0 个拦截点）实机跑通：64 位宿主、11 项补丁全部成功、版本图标与 WebP 图片正常（`libwebp` 由 PCL 自行释放，宿主不再预载 `Imazen.WebP`）。
 - 沙箱限制佐证：本次开发环境的目录被加了 `Everyone:(DENY)(S,DC)` + `Low Mandatory Level:(NW)` 的完整性标签（`icacls` 可见），PCL 的 `CheckPermissionWithException` 写入+删除探测文件时被拦；用直连、WMI、计划任务三种方式启动 PCLauncher 结果一致，说明与本工具无关。
 
 ## 持续集成 / 发布
