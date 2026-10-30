@@ -36,9 +36,10 @@ jobs:
           }
           if ($text -notmatch "requireAdministrator") { throw "缺少 requireAdministrator 清单" }
           Write-Host "内嵌资源与清单检查通过"
-          & $exe --selftest
-          if ($LASTEXITCODE -ne 0) { throw "selftest 失败（exit $LASTEXITCODE）" }
-          Write-Host "selftest 通过"
+          # 目标为 GUI 子系统程序，PowerShell 不会等待，必须 Start-Process -Wait 取退出码
+          $p = Start-Process -FilePath $exe -ArgumentList "--selftest" -Wait -PassThru -NoNewWindow
+          if ($p.ExitCode -ne 0) { throw "selftest 失败（exit $($p.ExitCode)）" }
+          Write-Host "selftest 通过（exit 0）"
           Get-FileHash $exe -Algorithm SHA256 | Format-List
 
       - name: 上传构建产物
