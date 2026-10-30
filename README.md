@@ -180,3 +180,10 @@ PCL-MCDownload-fixer.exe --selftest
 - **打 tag（`v*`）**：自动创建 GitHub Release，附上 `PCL-MCDownload-fixer.exe`（Release 说明里带 SHA256）。
 
 发布流程：`git tag v1.0.0 && git push origin v1.0.0`。
+
+## 13. 声明
+
+本项目的源码（`src/`）、构建脚本（`build/`）、GitHub Actions 配置以及本文档，
+均由 **DeepSeek-V4.1-Flash** 编写与整理；需求、验收与最终取舍由使用者决定。
+
+如发现代码或文档问题，欢迎提 issue。
