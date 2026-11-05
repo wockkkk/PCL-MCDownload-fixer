@@ -60,7 +60,7 @@ build\build-node.cmd   # 备用：需要 Node.js，逻辑与 build.ps1 相同
 - **内嵌依赖预载**：PCL 把 MeloongCore / PCLCS / Newtonsoft.Json 等以资源形式内嵌在 exe 里，并且是在自己的启动流程中才注册 AssemblyResolve。为了让 Harmony 在补丁阶段就能解析方法签名，宿主会先把这些内嵌程序集预载进域。
 - **零侵入**：只 hook 目标方法；所有 patch 归到一个 Harmony id `PCL.PCLauncher.Recovery`，便于整包卸载排查。
 - **只读分析**：Cecil 以 `InMemory` 方式打开文件，不持有文件句柄、不写回。
-- **哈希自证**：启动前后各算一次 SHA256 并写入日志。
+- **哈希自证**：PCL 退出时直接调 `Environment.Exit`，进程级 `AppDomain.ProcessExit` 实测不触发（钩 `Environment.Exit` 也无效，它本身是内部实现），所以“退出后当场算哈希”不可行。改为跨次启动校验：`HashState` 每次启动前把哈希写进 `runtime\state\last-run.sha256`，下次启动先比对上次记录，一致即证明两次运行之间 exe 未被改写；PCL 正常返回（没走 Exit）时另有一次当场校验。
 
 ## 宿主兼容层（实机踩坑记录）
 
@@ -86,7 +86,9 @@ build\build-node.cmd   # 备用：需要 Node.js，逻辑与 build.ps1 相同
 - 扫描层：对 PCL 2.99.0.0 / 2.99.0.1 / 2.13.1.1 做过解析验证（运行时用 `--scan` 随时复查）。
 - 2.99.0.0 与 2.99.0.1 都是 **4 个拦截点**，形态完全一致；但**文案不同**（2.99.0.0 是“PCL 暂时不再提供…”，2.99.0.1 是“PCL 不再提供…”），所以规则按前缀“为遵守相关法律法规”匹配，避免跨版本失效。
 - 2.13.1.1（限制上线前）**0 个拦截点**，可作对照基线。
-- 宿主：PCL 程序集加载成功；**15 项补丁全部成功**（0 失败、1 个陷阱点跳过）；8/8 个目标方法 JIT 校验通过；内嵌依赖（MeloongCore / PCLCS / Newtonsoft.Json 等 10 个）预载成功。
+- 宿主：PCL 程序集加载成功；**16 项补丁全部成功**（0 失败、1 个陷阱点跳过）；JIT 校验通过；内嵌依赖（MeloongCore / PCLCS / Newtonsoft.Json 等 10 个）预载成功。
+- 更新禁用：2.99.0.1 实测识别 **6 个目标**（4 个 Update* + `DownloadLatestPCL` + `get_HasUpdatePermission`）。规则里写属性名即可，扫描层会同时匹配 `get_`/`set_` 访问器——否则按裸名前缀匹配会永远落空。
+- 尚未实机验证的部分（避免过度承诺）：`restoreModpackRowClick`、`restoreSaveButton`、文件面板“导入整合包”注入这三项目前只确认 hook 已挂载，还没有对应的点击执行记录。
 - 自检：整合包类型识别 8/8 通过。
 - 官方 exe：在全部实验前后哈希一致（运行时会自动比对并写日志，可自证零改动）。
 - PCL 2.13.1.1（限制上线前版本，0 个拦截点）实机跑通：64 位宿主、11 项补丁全部成功、版本图标与 WebP 图片正常（`libwebp` 由 PCL 自行释放，宿主不再预载 `Imazen.WebP`）。

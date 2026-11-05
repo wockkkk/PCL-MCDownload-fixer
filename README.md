@@ -21,7 +21,7 @@
   - `runtime\temp` —— 仅当系统临时目录不可写时才启用
 - 想改行为：编辑同目录的 `rules.json`（删掉则使用内嵌默认值）
 - 自检：`PCL-MCDownload-fixer.exe --selftest`；全部参数：`--help`
-- 官方 exe 在启动前后各算一次 SHA256 并写进日志，可自证零改动
+- 每次启动前会把官方 exe 的 SHA256 记到 `runtime\state\last-run.sha256`，下次启动自动比对并写进日志，可自证零改动
 
 ## 1. 它做什么
 

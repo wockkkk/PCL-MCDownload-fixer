@@ -193,21 +193,36 @@ namespace PCLauncher.Scan
                 report.Warnings.Add("未找到更新模块类型 " + rules.UpdateBlock.Type);
                 return;
             }
+            var matched = new HashSet<string>(StringComparer.Ordinal);
             foreach (var m in type.Methods)
             {
-                if (rules.UpdateBlock.MethodPrefixes.Any(p => m.Name.StartsWith(p, StringComparison.Ordinal)))
+                string hit = rules.UpdateBlock.MethodPrefixes.FirstOrDefault(p => MatchesUpdateMethod(m.Name, p));
+                if (hit == null) continue;
+                matched.Add(hit);
+                report.UpdateTargets.Add(new UpdateTarget
                 {
-                    report.UpdateTargets.Add(new UpdateTarget
-                    {
-                        Token = m.MetadataToken.ToInt32(),
-                        DeclaringType = type.FullName,
-                        MethodName = m.Name,
-                        Signature = DescribeSignature(m)
-                    });
-                }
+                    Token = m.MetadataToken.ToInt32(),
+                    DeclaringType = type.FullName,
+                    MethodName = m.Name,
+                    Signature = DescribeSignature(m)
+                });
             }
             if (report.UpdateTargets.Count == 0)
                 report.Warnings.Add("更新禁用：在 " + rules.UpdateBlock.Type + " 中未匹配到任何方法。");
+            // 规则里的前缀一个都没命中，多半是 PCL 改名了；别让它静默失效
+            foreach (var p in rules.UpdateBlock.MethodPrefixes.Where(p => !matched.Contains(p)))
+                report.Warnings.Add("更新禁用：规则前缀 “" + p + "” 未匹配到任何方法（可能已改名或移除）。");
+        }
+
+        /// <summary>
+        /// 规则里写属性名也要能命中它的访问器：PCL 的更新权限是属性 HasUpdatePermission，
+        /// 编译出来只有 get_HasUpdatePermission / set_HasUpdatePermission，按裸名前缀匹配会永远失败。
+        /// </summary>
+        private static bool MatchesUpdateMethod(string methodName, string prefix)
+        {
+            if (methodName.StartsWith(prefix, StringComparison.Ordinal)) return true;
+            return methodName.StartsWith("get_" + prefix, StringComparison.Ordinal)
+                || methodName.StartsWith("set_" + prefix, StringComparison.Ordinal);
         }
 
         public static string DescribeSignature(MethodDefinition m)

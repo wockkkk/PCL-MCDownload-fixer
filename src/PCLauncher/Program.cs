@@ -80,7 +80,9 @@ namespace PCLauncher
                 LogBitness(pclExe);
                 string beforeHash = Crypto.Sha256File(pclExe);
                 Log.Info("目标 PCL：" + pclExe);
-                Log.Info("目标 SHA256（启动前）：" + beforeHash);
+                Log.Info("目标 SHA256（启动前）：" + (beforeHash ?? "<计算失败>"));
+                // PCL 退出时走 Environment.Exit，主流程返回不了：改为跨次启动比对 + 正常返回时当场校验
+                HashState.VerifyPrevious(pclExe, beforeHash, runtimeDir);
 
                 Rules rules = Rules.Load(opt.RulesPath, opt);
                 EnvironmentPrep.PrepareTemp(opt, pclDir);
@@ -92,20 +94,13 @@ namespace PCLauncher
                     ScanReport scan = PclScanner.Scan(pclExe, rules);
                     ScanReportWriter.Write(scan, opt.OutDir ?? Path.Combine(runtimeDir, "reports"), beforeHash);
                     Console.WriteLine(ScanReportWriter.ToText(scan));
-                    Log.Info("扫描完成，报告已写入 " + (opt.OutDir ?? pclDir));
+                    Log.Info("扫描完成，报告已写入 " + (opt.OutDir ?? Path.Combine(runtimeDir, "reports")));
                     return 0;
                 }
 
                 int exitCode = PclHost.Run(pclExe, opt, rules, beforeHash, runtimeDir);
 
-                string afterHash = Crypto.Sha256File(pclExe);
-                Log.Info("目标 SHA256（退出后）：" + (afterHash ?? "<计算失败>"));
-                if (beforeHash == null || afterHash == null)
-                    Log.Warn("哈希校验未完成（无法读取文件），本次不做“未修改”结论。");
-                else if (afterHash == beforeHash)
-                    Log.Info("校验通过：官方 exe 未被修改。");
-                else
-                    Log.Error("警告：官方 exe 哈希发生变化！");
+                HashState.VerifyAfterRun(pclExe, beforeHash);
                 return exitCode;
             }
             catch (Exception ex)

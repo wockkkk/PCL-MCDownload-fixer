@@ -20,3 +20,9 @@ obj/
 # 本地配置
 *.user
 *.suo
+
+# 临时脚本 / 环境变量展开失败产生的怪路径
+.tmp-*/
+.tmp-*
+/%SystemDrive%/
+exit-hash.marker
