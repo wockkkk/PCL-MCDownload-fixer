@@ -53,9 +53,17 @@ $lines.Add("/optimize+")
 $lines.Add("/nostdlib+")
 $lines.Add("/debug-")
 $lines.Add("/deterministic+")
-$lines.Add('/win32manifest:"' + (Join-Path $PSScriptRoot "app.manifest") + '"')
-$icon = Join-Path $PSScriptRoot "app.ico"
-if (Test-Path $icon) { $lines.Add('/win32icon:"' + $icon + '"') }
+# 资源：版本信息 + 清单 + 图标。csc 的 /win32res 与 /win32icon、/win32manifest 互斥，所以都并进 .res
+$resObj = Join-Path $PSScriptRoot "version.obj"
+$node = Get-Command node -ErrorAction SilentlyContinue
+if ($node) {
+    & $node.Source (Join-Path $PSScriptRoot "make-res.mjs")
+    if ($LASTEXITCODE -ne 0) { throw "生成 Win32 资源失败" }
+}
+if (-not (Test-Path $resObj)) {
+    throw "缺少 build\version.obj（由 build\make-res.mjs 生成；仓库内已提交一份，或用 Node.js 重新生成）"
+}
+$lines.Add('/win32res:"' + $resObj + '"')
 $lines.Add('/out:"' + $outExe + '"')
 $lines.Add('/resource:"' + (Join-Path $src "assets\rules.json") + '",PCLauncher.rules.json')
 $lines.Add('/resource:"' + (Join-Path $lib "Mono.Cecil.dll") + '",Mono.Cecil.dll')

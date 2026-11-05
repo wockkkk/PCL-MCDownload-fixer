@@ -10,9 +10,9 @@
     <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <Deterministic>true</Deterministic>
-    <!-- 与单文件构建保持一致：同样声明 requireAdministrator，否则 VS 构建出来是 asInvoker -->
-    <ApplicationManifest>..\..\build\app.manifest</ApplicationManifest>
-    <ApplicationIcon>..\..\build\app.ico</ApplicationIcon>
+    <!-- 与单文件构建一致：清单（requireAdministrator）、图标、版本信息都来自 build\version.obj
+         生成方式：node build\make-res.mjs（构建脚本会自动执行） -->
+    <Win32Resource>..\..\build\version.obj</Win32Resource>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Mono.Cecil">

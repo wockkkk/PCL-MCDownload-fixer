@@ -26,7 +26,7 @@ function findCsc() {
   const sdkRoot = path.join(process.env.ProgramFiles || "C:\\Program Files", "dotnet", "sdk");
   const dirs = fs.readdirSync(sdkRoot).sort((a, b) => versionKey(b).localeCompare(versionKey(a)));
   for (const d of dirs) {
-    const c = path.join(sdkRoot, d, "Roslyn", "bin core".replace(" ", ""), "csc.dll");
+    const c = path.join(sdkRoot, d, "Roslyn", "bincore", "csc.dll");
     if (fs.existsSync(c)) return c;
   }
   throw new Error("未找到带 Roslyn 的 .NET SDK");
@@ -80,8 +80,22 @@ const refs = ["mscorlib", "System", "System.Core", "System.Web.Extensions", "Sys
   .map((n) => '/r:"' + path.join(refDir, n + ".dll") + '"');
 refs.push('/r:"' + path.join(lib, "Mono.Cecil.dll") + '"', '/r:"' + path.join(lib, "0Harmony.dll") + '"');
 
+// 资源：版本信息 + 清单 + 图标。csc 的 /win32res 与 /win32icon、/win32manifest 互斥，所以都并进 .res，
+// 再由 cvtres 转成 csc 需要的 COFF 资源对象。
+function buildResource() {
+  const res = path.join(root, "build", "version.res");
+  const obj = path.join(root, "build", "version.obj");
+  // 生成器负责 version.res、VersionInfo.g.cs，并调用 cvtres 产出 version.obj
+  const gen = spawnSync(process.execPath, [path.join(root, "build", "make-res.mjs")], { encoding: "utf8" });
+  if (gen.status !== 0) throw new Error("生成 Win32 资源失败：" + (gen.stderr || gen.stdout || ""));
+  console.log((gen.stdout || "").trim());
+  if (!fs.existsSync(obj)) throw new Error("缺少 " + obj + "（cvtres 未找到？）");
+  return obj;
+}
+
 fs.mkdirSync(out, { recursive: true });
 const outExe = path.join(out, "PCL-MCDownload-fixer.exe");
+const resObj = buildResource();
 const lines = [
   "/nologo",
   "/target:winexe",
@@ -91,10 +105,7 @@ const lines = [
   "/nostdlib+",
   "/debug-",
   "/deterministic+",
-  '/win32manifest:"' + path.join(root, "build", "app.manifest") + '"',
-  ...(fs.existsSync(path.join(root, "build", "app.ico"))
-    ? ['/win32icon:"' + path.join(root, "build", "app.ico") + '"']
-    : []),
+  '/win32res:"' + resObj + '"',
   '/out:"' + outExe + '"',
   '/resource:"' + path.join(src, "assets", "rules.json") + '",PCLauncher.rules.json',
   '/resource:"' + path.join(lib, "Mono.Cecil.dll") + '",Mono.Cecil.dll',

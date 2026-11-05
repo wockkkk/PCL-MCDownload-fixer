@@ -114,7 +114,8 @@ PCL-MCDownload-fixer.exe --selftest
 build\build.cmd
 ```
 
-产物是单文件 `PCL-MCDownload-fixer\PCL-MCDownload-fixer.exe`。构建细节、补丁策略、宿主兼容层与 CI 说明见 [DEVELOPMENT.md](DEVELOPMENT.md)。
+产物是单文件 `PCL-MCDownload-fixer\PCL-MCDownload-fixer.exe`，其版本信息（文件说明 / 产品名 / 版本 / 版权）、应用图标与 requireAdministrator 清单由 `build/version.txt` 与 `build/app.ico` 在构建时自动写入。
+构建细节、补丁策略、宿主兼容层与 CI 说明见 [DEVELOPMENT.md](DEVELOPMENT.md)。
 
 ## 10. 声明
 

@@ -28,17 +28,29 @@ build\build-node.cmd   # 备用：需要 Node.js，逻辑与 build.ps1 相同
 ```
 
 产物是**单文件**：`PCL-MCDownload-fixer\PCL-MCDownload-fixer.exe`（约 2.6 MB）。
-构建脚本用 `csc /resource:` 把 `0Harmony.dll`、`Mono.Cecil.dll`、`rules.json` 嵌进 exe，所以产物只有这一个文件；
-同时用 `/win32manifest:`（requireAdministrator）和 `/win32icon:`（应用图标）修饰外壳。
+构建脚本用 `csc /resource:` 把 `0Harmony.dll`、`Mono.Cecil.dll`、`rules.json` 嵌进 exe，所以产物只有这一个文件。
 两个脚本已对齐：都通过 csc 响应文件传参（避免路径空格被拆开）、按版本号数字排序选 SDK、引用程序集缺失时从 NuGet 兜底下载，并跳过 `bin/`、`obj/`。
-也可以直接用 Visual Studio 打开 `src/PCLauncher/PCLauncher.csproj`（net48 + AnyCPU，已配置 manifest 与图标；但 VS 构建不是单文件，依赖 dll 会在输出目录里）。
+也可以直接用 Visual Studio 打开 `src/PCLauncher/PCLauncher.csproj`（net48 + AnyCPU，已配置 `Win32Resource`；VS 构建不是单文件，依赖 dll 会留在输出目录）。
 
 > 若 PowerShell 提示 “AuthorizationManager 检查失败”，说明脚本所在磁盘被当作远程位置：把项目复制到本地磁盘，或改用 build-node.cmd。
+
+### 版本信息、图标与清单
+
+版本号唯一来源是 `build/version.txt`。构建前 `build/make-res.mjs` 生成三样东西：
+
+- `build/version.res`：VERSIONINFO（文件说明 / 产品名 / 版本 / 版权等）+ 应用清单（requireAdministrator）+ 图标；
+- `src/PCLauncher/VersionInfo.g.cs`：托管程序集属性（AssemblyVersion / AssemblyFileVersion 等）；
+- `build/version.obj`：用系统自带 `cvtres.exe` 转出的 COFF 资源对象。
+
+> csc 的 `/win32res` 与 `/win32icon`、`/win32manifest` 互斥，而且只认 COFF 资源对象，所以清单、图标、版本信息必须合并进同一个 `.res` 再由 `cvtres` 转换。
+> 产物「属性 → 详细信息」里的文件说明、产品名、版本、版权都来自这里。
+
+发版流程：改 `build/version.txt` → 构建（自动重生成上述文件）→ 产物属性里的版本号随之更新。
 
 ### 应用图标
 
 `build/app.ico` 由 PCL 官方 exe 内嵌的图标资源提取后**略作修改**（右下角加一个绿色对勾徽标）生成，仅用于让 Fixer 在外观上和 PCL 一致、同时能与官方区分。
-生成脚本是一次性本地操作，未入库；仓库只保留成品 `app.ico`。该图标是 PCL 图标的衍生作品，版权归 PCL 作者，随本项目仅作视觉识别用途。
+提取/改版脚本是一次性本地操作，未入库；仓库只保留成品 `app.ico`。该图标是 PCL 图标的衍生作品，版权归 PCL 作者，随本项目仅作视觉识别用途。
 
 ## 补丁策略（与源码形态一一对应）
 
