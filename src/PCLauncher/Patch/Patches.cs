@@ -16,9 +16,6 @@ namespace PCLauncher.Patch
     /// </summary>
     public static class Patches
     {
-        public static string[] MarkerPrefixes = { "为遵守相关法律法规" };
-        public static string HintTitle = "关闭下载";
-        public static string ReplaceTitle = "Minecraft 版本";
         public static FieldInfo LoaderField;
         public static Type ModpackType;
         public static bool ModpackDialogEnabled = true;
@@ -33,40 +30,6 @@ namespace PCLauncher.Patch
         }
 
         // ---------------- Transpiler ----------------
-
-        /// <summary>
-        /// 删除“ldstr 特征串 + newobj Exception(string) + throw”整段，
-        /// 替换为 rethrow（该段位于 Catch 块尾部，语义等价于原始无参 Throw）。
-        /// </summary>
-        public static IEnumerable<CodeInstruction> MarkerThrowTranspiler(IEnumerable<CodeInstruction> instructions)
-        {
-            var list = instructions.ToList();
-            var result = new List<CodeInstruction>(list.Count);
-            int i = 0;
-            int replaced = 0;
-            while (i < list.Count)
-            {
-                if (i + 2 < list.Count && IsMarkerLdstr(list[i]) && IsExceptionCtor(list[i + 1]) && list[i + 2].opcode == System.Reflection.Emit.OpCodes.Throw)
-                {
-                    var rethrow = new CodeInstruction(System.Reflection.Emit.OpCodes.Rethrow, null);
-                    CopyLabels(list[i], rethrow);
-                    CopyLabels(list[i + 1], rethrow);
-                    CopyLabels(list[i + 2], rethrow);
-                    rethrow.blocks.AddRange(list[i].blocks);
-                    rethrow.blocks.AddRange(list[i + 1].blocks);
-                    rethrow.blocks.AddRange(list[i + 2].blocks);
-                    result.Add(rethrow);
-                    i += 3;
-                    replaced++;
-                    continue;
-                }
-                result.Add(list[i]);
-                i++;
-            }
-            if (replaced > 0) Log.Info("[transpiler] 已把 " + replaced + " 处下架 throw 段替换为 rethrow。");
-            else Log.Warn("[transpiler] 未匹配到下架 throw 段（版本漂移？）。");
-            return result;
-        }
 
         /// <summary>
         /// 下载页加载器恢复：
@@ -166,17 +129,6 @@ namespace PCLauncher.Patch
             {
                 Log.Error("[modpack] 手动安装入口执行失败", ex);
             }
-        }
-
-        /// <summary>
-        /// 恢复“从文件安装整合包”的真正实现：原方法体只保留了“打开压缩包并识别类型”，
-        /// 之后的 Select Case 分发被编译期删除。这里整段接管，并复用 PCL 仍然完整的 InstallPack* 方法。
-        /// </summary>
-        public static bool ModpackInstallWithFilePrefix(string File, string InstanceName, string Logo, ref object __result)
-        {
-            if (!ModpackDialogEnabled || ModpackType == null) return true;
-            __result = ModpackInstaller.Install(File, InstanceName, Logo, ModpackType);
-            return false;
         }
 
         /// <summary>入口：把参数转交给运行时重建的分发器，返回值原样带回。</summary>
@@ -643,26 +595,6 @@ namespace PCLauncher.Patch
         }
 
         // ---------------- 工具 ----------------
-
-        private static bool IsMarkerLdstr(CodeInstruction ci)
-        {
-            if (ci.opcode != System.Reflection.Emit.OpCodes.Ldstr) return false;
-            var s = ci.operand as string;
-            if (string.IsNullOrEmpty(s)) return false;
-            foreach (var p in MarkerPrefixes)
-                if (!string.IsNullOrEmpty(p) && s.StartsWith(p, StringComparison.Ordinal)) return true;
-            return false;
-        }
-
-        private static bool IsExceptionCtor(CodeInstruction ci)
-        {
-            if (ci.opcode != System.Reflection.Emit.OpCodes.Newobj) return false;
-            var ctor = ci.operand as ConstructorInfo;
-            if (ctor == null) return false;
-            var ps = ctor.GetParameters();
-            return ctor.DeclaringType.FullName == "System.Exception"
-                   && ps.Length == 1 && ps[0].ParameterType == typeof(string);
-        }
 
         private static void CopyLabels(CodeInstruction from, CodeInstruction to)
         {

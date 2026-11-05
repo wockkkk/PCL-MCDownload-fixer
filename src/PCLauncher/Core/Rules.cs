@@ -10,7 +10,6 @@ namespace PCLauncher.Core
         public string PageType = "PCL.PageDownloadInstall";
         public string MethodName = "LoaderInit";
         public string HintTitle = "关闭下载";
-        public string ReplaceTitle = "Minecraft 版本";
         public string LoaderFieldType = "PCL.ModDownload";
         public string LoaderFieldName = "DlClientListLoader";
         public string Mode = "replace";   // replace | skip | none
@@ -39,7 +38,6 @@ namespace PCLauncher.Core
         public LoaderRule Loader = new LoaderRule();
         public UpdateRule UpdateBlock = new UpdateRule();
         public ModpackRule ModpackDialog = new ModpackRule();
-        public bool RestoreLoader = true;
         public bool PermissionCompat = true;
         public bool DisableSplash = true;
         public bool EnvironmentCompat = true;
@@ -47,7 +45,7 @@ namespace PCLauncher.Core
         public bool RegistryCompat = false;
         public bool RestoreModpackRowClick = true;
         public bool RestoreSaveButton = true;
-        public bool LongPathCompat = true;   // false = 自动探测，写不进注册表时自动启用
+        public bool LongPathCompat = true;   // 关闭后不改写 \\?\ 长路径前缀（老系统 / 超长路径场景可关）
         public string Source = "内置默认值";
 
         public static Rules Load(string path, Options opt)
@@ -81,14 +79,27 @@ namespace PCLauncher.Core
 
             if (json == null) return r;
 
-            var d = Json.ParseObject(json);
-            if (d == null) return r;
+            Dictionary<string, object> d;
+            try
+            {
+                d = Json.ParseObject(json);
+            }
+            catch (Exception ex)
+            {
+                // 用户手改 rules.json 写坏了不能让程序崩溃：告警并回落到内置默认值
+                Log.Error("[rules] 规则文件解析失败，改用内置默认值：" + ex.Message + "（" + r.Source + "）");
+                return r;
+            }
+            if (d == null)
+            {
+                Log.Warn("[rules] 规则文件不是合法的 JSON 对象，改用内置默认值：" + r.Source);
+                return r;
+            }
 
             r.MarkerPrefixes = StrArray(d, "markerPrefixes", r.MarkerPrefixes);
             r.HintMethodNames = StrArray(d, "hintMethodNames", r.HintMethodNames);
             r.CompareMethodNames = StrArray(d, "compareMethodNames", r.CompareMethodNames);
             r.ExceptionType = Str(d, "exceptionType", r.ExceptionType);
-            r.RestoreLoader = Bool(d, "restoreLoader", r.RestoreLoader);
             r.PermissionCompat = Bool(d, "permissionCompat", r.PermissionCompat);
             r.DisableSplash = Bool(d, "disableSplash", r.DisableSplash);
             r.EnvironmentCompat = Bool(d, "environmentCompat", r.EnvironmentCompat);
@@ -104,7 +115,6 @@ namespace PCLauncher.Core
                 r.Loader.PageType = Str(loader, "pageType", r.Loader.PageType);
                 r.Loader.MethodName = Str(loader, "methodName", r.Loader.MethodName);
                 r.Loader.HintTitle = Str(loader, "hintTitle", r.Loader.HintTitle);
-                r.Loader.ReplaceTitle = Str(loader, "replaceTitle", r.Loader.ReplaceTitle);
                 r.Loader.LoaderFieldType = Str(loader, "loaderFieldType", r.Loader.LoaderFieldType);
                 r.Loader.LoaderFieldName = Str(loader, "loaderFieldName", r.Loader.LoaderFieldName);
                 r.Loader.Mode = Str(loader, "mode", r.Loader.Mode);

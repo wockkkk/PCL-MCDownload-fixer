@@ -10,6 +10,9 @@
     <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <Deterministic>true</Deterministic>
+    <!-- 与单文件构建保持一致：同样声明 requireAdministrator，否则 VS 构建出来是 asInvoker -->
+    <ApplicationManifest>..\..\build\app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\..\build\app.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Mono.Cecil">

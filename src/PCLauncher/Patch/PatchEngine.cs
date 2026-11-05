@@ -24,9 +24,6 @@ namespace PCLauncher.Patch
             var result = new PatchResult();
             var harmony = new Harmony(HarmonyId);
 
-            Patches.MarkerPrefixes = rules.MarkerPrefixes;
-            Patches.HintTitle = rules.Loader.HintTitle;
-            Patches.ReplaceTitle = rules.Loader.ReplaceTitle;
             Patches.ModpackDialogEnabled = rules.ModpackDialog.Enabled;
 
             var module = pcl.ManifestModule;
@@ -41,7 +38,6 @@ namespace PCLauncher.Patch
             Patches.ModpackType = pcl.GetType(rules.ModpackDialog.Type, false, true);
 
             var skipPrefix = new HarmonyMethod(typeof(Patches).GetMethod("SkipPrefix"));
-            var throwTranspiler = new HarmonyMethod(typeof(Patches).GetMethod("MarkerThrowTranspiler"));
 
             // ---- 1. 特征串拦截点 ----
             foreach (var site in report.Sites)
@@ -76,6 +72,7 @@ namespace PCLauncher.Patch
                         // 宁可不动，也不打一个会让方法失效的补丁。
                         result.Skipped.Add(id + " —— 内联 throw 无 catch 上下文，跳过（未修改）");
                         Log.Warn("[patch] 跳过内联 throw（无 catch 上下文）：" + id);
+                        continue;    // 不要继续落到下面的 Applied.Add，否则同一条会既算跳过又算成功
                     }
                     else if (site.Kind == SiteKind.Hint && isModpackInstall && rules.ModpackDialog.Enabled && mb.GetParameters().Length == 0)
                     {

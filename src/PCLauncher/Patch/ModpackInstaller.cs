@@ -37,28 +37,37 @@ namespace PCLauncher.Patch
                 throw new Exception("打开整合包文件失败，文件可能损坏或为不支持的压缩包格式", ex);
             }
 
-            string baseFolder;
-            int packType = DetectPackType(archive, out baseFolder);
-            Log.Info("[modpack] 识别到整合包类型：" + packType + "，基准目录：" + baseFolder);
-
-            MethodInfo target;
-            object[] args;
-            switch (packType)
+            try
             {
-                case 0: target = Find(modpackType, "InstallPackCurseForge", 5); args = new object[] { file, archive, baseFolder, instanceName, logo }; break;
-                case 1: target = Find(modpackType, "InstallPackHMCL", 3); args = new object[] { file, archive, baseFolder }; break;
-                case 2: target = Find(modpackType, "InstallPackMMC", 3); args = new object[] { file, archive, baseFolder }; break;
-                case 3: target = Find(modpackType, "InstallPackMCBBS", 4); args = new object[] { file, archive, baseFolder, instanceName }; break;
-                case 4: target = Find(modpackType, "InstallPackModrinth", 5); args = new object[] { file, archive, baseFolder, instanceName, logo }; break;
-                case 9: target = Find(modpackType, "InstallPackLauncherPack", 3); args = new object[] { file, archive, baseFolder }; break;
-                default: target = Find(modpackType, "InstallPackCompress", 2); args = new object[] { file, archive }; break;
+                string baseFolder;
+                int packType = DetectPackType(archive, out baseFolder);
+                Log.Info("[modpack] 识别到整合包类型：" + packType + "，基准目录：" + baseFolder);
+
+                MethodInfo target;
+                object[] args;
+                switch (packType)
+                {
+                    case 0: target = Find(modpackType, "InstallPackCurseForge", 5); args = new object[] { file, archive, baseFolder, instanceName, logo }; break;
+                    case 1: target = Find(modpackType, "InstallPackHMCL", 3); args = new object[] { file, archive, baseFolder }; break;
+                    case 2: target = Find(modpackType, "InstallPackMMC", 3); args = new object[] { file, archive, baseFolder }; break;
+                    case 3: target = Find(modpackType, "InstallPackMCBBS", 4); args = new object[] { file, archive, baseFolder, instanceName }; break;
+                    case 4: target = Find(modpackType, "InstallPackModrinth", 5); args = new object[] { file, archive, baseFolder, instanceName, logo }; break;
+                    case 9: target = Find(modpackType, "InstallPackLauncherPack", 3); args = new object[] { file, archive, baseFolder }; break;
+                    default: target = Find(modpackType, "InstallPackCompress", 2); args = new object[] { file, archive }; break;
+                }
+
+                if (target == null)
+                    throw new MissingMethodException("当前 PCL 版本缺少整合包安装方法（" + packType + "）。");
+
+                Log.Info("[modpack] 调用 " + target.Name);
+                return target.Invoke(null, args);
             }
-
-            if (target == null)
-                throw new MissingMethodException("当前 PCL 版本缺少整合包安装方法（" + packType + "）。");
-
-            Log.Info("[modpack] 调用 " + target.Name);
-            return target.Invoke(null, args);
+            finally
+            {
+                // PCL 的 InstallPack* 用完后负责释放：不 Dispose 会每次安装泄漏一个 ZipArchive/FileStream 句柄
+                try { archive.Dispose(); }
+                catch (Exception ex) { Log.Warn("[modpack] 关闭整合包文件失败：" + ex.Message); }
+            }
         }
 
         /// <summary>按 PCL 源码 ModModpack.vb 的规则识别整合包类型。0=CurseForge 1=HMCL 2=MMC 3=MCBBS 4=Modrinth 9=启动器包 -1=普通压缩包。</summary>

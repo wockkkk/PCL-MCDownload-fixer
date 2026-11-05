@@ -54,6 +54,8 @@ $lines.Add("/nostdlib+")
 $lines.Add("/debug-")
 $lines.Add("/deterministic+")
 $lines.Add('/win32manifest:"' + (Join-Path $PSScriptRoot "app.manifest") + '"')
+$icon = Join-Path $PSScriptRoot "app.ico"
+if (Test-Path $icon) { $lines.Add('/win32icon:"' + $icon + '"') }
 $lines.Add('/out:"' + $outExe + '"')
 $lines.Add('/resource:"' + (Join-Path $src "assets\rules.json") + '",PCLauncher.rules.json')
 $lines.Add('/resource:"' + (Join-Path $lib "Mono.Cecil.dll") + '",Mono.Cecil.dll')
@@ -64,9 +66,9 @@ foreach ($asm in @("mscorlib","System","System.Core","System.Web.Extensions","Sy
 }
 $lines.Add('/r:"' + (Join-Path $lib "Mono.Cecil.dll") + '"')
 $lines.Add('/r:"' + (Join-Path $lib "0Harmony.dll") + '"')
-Get-ChildItem -Path $src -Recurse -Filter *.cs | ForEach-Object {
-    $lines.Add('"' + $_.FullName + '"')
-}
+Get-ChildItem -Path $src -Recurse -Filter *.cs |
+    Where-Object { $_.FullName -notmatch '[\\/](bin|obj)[\\/]' } |
+    ForEach-Object { $lines.Add('"' + $_.FullName + '"') }
 
 $rsp = Join-Path $env:TEMP "PCL-MCDownload-fixer-csc.rsp"
 Set-Content -Path $rsp -Value $lines -Encoding UTF8

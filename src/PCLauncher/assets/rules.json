@@ -3,7 +3,6 @@
   "hintMethodNames": ["Hint"],
   "compareMethodNames": ["CompareString"],
   "exceptionType": "System.Exception",
-  "restoreLoader": true,
   "permissionCompat": true,
   "disableSplash": true,
   "environmentCompat": true,
@@ -16,7 +15,6 @@
     "pageType": "PCL.PageDownloadInstall",
     "methodName": "LoaderInit",
     "hintTitle": "关闭下载",
-    "replaceTitle": "Minecraft 版本",
     "loaderFieldType": "PCL.ModDownload",
     "loaderFieldName": "DlClientListLoader",
     "mode": "replace"
